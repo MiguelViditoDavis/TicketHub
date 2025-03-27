@@ -22,19 +22,18 @@ namespace TicketHub.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Get Azure Storage Queue settings from appsettings.json
-            var connectionString = _config["AzureStorage:ConnectionString"];
-            var queueName = _config["AzureStorage:QueueName"];
+            var connectionString = _config["AzureStorageConnectionString"];
+            var queueName = "tickethub";
 
-            // Connect to the Azure queue
+            if (string.IsNullOrEmpty(connectionString))
+                return BadRequest("Missing Azure Storage connection string.");
+
             var client = new QueueClient(connectionString, queueName);
             await client.CreateIfNotExistsAsync();
 
-            // Serialize and Base64 encode the message
             var json = JsonSerializer.Serialize(purchase);
             var base64Message = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
 
-            // Send message to the queue
             await client.SendMessageAsync(base64Message);
 
             return Ok(new { message = "Purchase successfully queued." });
